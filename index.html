@@ -28,6 +28,9 @@
           </div>
         </div>
         <div class="admin-actions">
+          <span style="color: var(--text-muted); font-size: 0.9rem; margin-right: var(--sp-4); display: flex; align-items: center;">
+            Total recibidas: <strong id="statTotal" style="color: var(--text-light); margin-left: var(--sp-2);">0</strong>
+          </span>
           <a href="display.html" target="_blank" class="btn btn-primary btn-sm" title="Abrir proyector en nueva pestaña">
             🖥️ Abrir Proyector
           </a>
@@ -47,16 +50,16 @@
     <!-- ─── Stats ───────────────────────────────────── -->
     <div class="stats-bar">
       <div class="glass-card stat-card">
-        <div class="stat-number blue" id="statTotal">0</div>
-        <div class="stat-label">Total</div>
-      </div>
-      <div class="glass-card stat-card">
         <div class="stat-number gold" id="statPending">0</div>
         <div class="stat-label">Pendientes</div>
       </div>
       <div class="glass-card stat-card">
         <div class="stat-number green" id="statApproved">0</div>
         <div class="stat-label">Aprobadas</div>
+      </div>
+      <div class="glass-card stat-card">
+        <div class="stat-number purple" id="statShown" style="color: #a78bfa; text-shadow: 0 0 15px rgba(167,139,250,0.4);">0</div>
+        <div class="stat-label">Mostradas</div>
       </div>
       <div class="glass-card stat-card">
         <div class="stat-number red" id="statRejected">0</div>
@@ -66,14 +69,14 @@
 
     <!-- ─── Filters ─────────────────────────────────── -->
     <div class="filter-tabs">
-      <button class="filter-tab active" data-filter="all" id="filterAll">
-        Todas <span class="count" id="countAll">0</span>
-      </button>
-      <button class="filter-tab" data-filter="pending" id="filterPending">
+      <button class="filter-tab active" data-filter="pending" id="filterPending">
         ⏳ Pendientes <span class="count" id="countPending">0</span>
       </button>
       <button class="filter-tab" data-filter="approved" id="filterApproved">
         ✅ Aprobadas <span class="count" id="countApproved">0</span>
+      </button>
+      <button class="filter-tab" data-filter="shown" id="filterShown">
+        📺 Mostradas <span class="count" id="countShown">0</span>
       </button>
       <button class="filter-tab" data-filter="rejected" id="filterRejected">
         ❌ Rechazadas <span class="count" id="countRejected">0</span>
@@ -104,7 +107,7 @@
     // ─── State ─────────────────────────────────────────
     let questions = {}; // Realtime object from Firebase { '-Nxxxxxx': { text, timestamp, status } }
     let displayState = { mode: 'qr', activeQuestionId: null };
-    let currentFilter = 'all';
+    let currentFilter = 'pending';
     let isInitialLoad = true;
     let knownKeys = new Set();
 
@@ -122,7 +125,6 @@
     const statRejected = document.getElementById('statRejected');
 
     // Counts in filters
-    const countAll = document.getElementById('countAll');
     const countPending = document.getElementById('countPending');
     const countApproved = document.getElementById('countApproved');
     const countRejected = document.getElementById('countRejected');
@@ -195,13 +197,14 @@
       statTotal.textContent = qList.length;
       statPending.textContent = qList.filter(q => q.status === 'pending').length;
       statApproved.textContent = qList.filter(q => q.status === 'approved').length;
+      document.getElementById('statShown').textContent = qList.filter(q => q.status === 'shown').length;
       statRejected.textContent = qList.filter(q => q.status === 'rejected').length;
     }
 
     function updateCounts(qList) {
-      countAll.textContent = qList.length;
       countPending.textContent = qList.filter(q => q.status === 'pending').length;
       countApproved.textContent = qList.filter(q => q.status === 'approved').length;
+      document.getElementById('countShown').textContent = qList.filter(q => q.status === 'shown').length;
       countRejected.textContent = qList.filter(q => q.status === 'rejected').length;
     }
 
@@ -212,7 +215,7 @@
 
       // Sort: pending first, then newest
       filtered.sort((a, b) => {
-        const statusOrder = { pending: 0, approved: 1, rejected: 2 };
+        const statusOrder = { pending: 0, approved: 1, shown: 2, rejected: 3 };
         if (statusOrder[a.status] !== statusOrder[b.status]) {
           return statusOrder[a.status] - statusOrder[b.status];
         }
@@ -245,6 +248,7 @@
       const statusLabels = {
         pending: '⏳ Pendiente',
         approved: '✅ Aprobada',
+        shown: '📺 Mostrada',
         rejected: '❌ Rechazada'
       };
 
@@ -259,7 +263,7 @@
             ❌ Rechazar
           </button>
         `;
-      } else if (q.status === 'approved') {
+      } else if (q.status === 'approved' || q.status === 'shown') {
         actions = `
           <button class="btn btn-primary btn-sm ${isActive ? 'active-display-btn' : ''}" 
                   data-action="show" data-id="${q.id}"
@@ -311,6 +315,7 @@
             showToast('Pregunta rechazada', '❌');
             break;
           case 'show':
+            await DB.update(`questions/${id}`, { status: 'shown' });
             await DB.set('displayState', { mode: 'question', activeQuestionId: id });
             showToast('Mostrando en pantalla', '📺');
             break;

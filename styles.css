@@ -897,27 +897,7 @@ body {
   position: relative;
 }
 
-.display-question-text::before {
-  content: '"';
-  font-size: 1.5em;
-  color: var(--gold-500);
-  opacity: 0.4;
-  font-weight: 800;
-  display: block;
-  margin-bottom: var(--sp-2);
-  line-height: 1;
-}
 
-.display-question-text::after {
-  content: '"';
-  font-size: 1.5em;
-  color: var(--gold-500);
-  opacity: 0.4;
-  font-weight: 800;
-  display: block;
-  margin-top: var(--sp-2);
-  line-height: 1;
-}
 
 /* Idle Mode */
 .display-idle {
@@ -1223,10 +1203,7 @@ body {
     padding: var(--sp-4);
   }
 
-  .display-question-text::before,
-  .display-question-text::after {
-    font-size: 1.2em;
-  }
+
 }
 
 /* Print styles for display */
