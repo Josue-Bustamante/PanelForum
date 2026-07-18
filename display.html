@@ -157,7 +157,6 @@
           <!-- QR Generated Here -->
         </div>
         <p class="display-qr-subtitle">Envía tu pregunta de forma anónima</p>
-        <p class="display-qr-url" id="displayUrl"></p>
       </div>
     </div>
 
@@ -204,7 +203,6 @@
     const modeIdle = document.getElementById('modeIdle');
     const questionText = document.getElementById('questionText');
     const qrContainer = document.getElementById('qrContainer');
-    const displayUrl = document.getElementById('displayUrl');
     const connectionDot = document.getElementById('connectionDot');
     const particlesContainer = document.getElementById('particles');
 
@@ -239,8 +237,6 @@
         const newPath = path.substring(0, path.lastIndexOf('/')) + '/preguntar.html';
         url = window.location.origin + newPath;
       }
-
-      displayUrl.textContent = url;
 
       // Clear previous QR
       qrContainer.innerHTML = '';
