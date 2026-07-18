@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="Envía tu pregunta de forma anónima para la sesión de Q&A">
+  <title>Enviar Pregunta — Panel Forum</title>
+  <link rel="stylesheet" href="styles.css">
+  <style>
+    /* Page-specific overrides */
+    .page-center {
+      padding: var(--sp-4);
+      padding-top: env(safe-area-inset-top, var(--sp-4));
+      padding-bottom: env(safe-area-inset-bottom, var(--sp-4));
+    }
+  </style>
+</head>
+<body>
+  <!-- Animated Background -->
+  <div class="bg-animated">
+    <div class="bg-orb bg-orb--1"></div>
+    <div class="bg-orb bg-orb--2"></div>
+    <div class="bg-orb bg-orb--3"></div>
+  </div>
+
+  <!-- Main Content -->
+  <div class="page-center">
+    <div class="glass-card glass-card--elevated audience-card" id="mainCard">
+      
+      <!-- Form State -->
+      <div id="formState">
+        <div class="audience-header">
+          <div class="audience-icon">💬</div>
+          <h1 class="text-heading gradient-text audience-title">Haz tu pregunta</h1>
+          <p class="audience-subtitle">Tu pregunta será revisada antes de mostrarse</p>
+        </div>
+
+        <form class="audience-form" id="questionForm">
+          <div class="form-group">
+            <label class="form-label" for="questionInput">Tu pregunta</label>
+            <textarea 
+              class="form-textarea" 
+              id="questionInput" 
+              placeholder="Escribe tu pregunta aquí..."
+              maxlength="500"
+              rows="4"
+              required
+            ></textarea>
+            <div class="char-counter" id="charCounter">0 / 500</div>
+          </div>
+
+          <button type="submit" class="btn btn-primary btn-lg" id="submitBtn" style="width: 100%;">
+            <span id="submitText">Enviar pregunta</span>
+            <div class="spinner hidden" id="submitSpinner"></div>
+          </button>
+        </form>
+
+        <div class="audience-footer">
+          <span class="anonymous-badge">
+            🔒 Completamente anónimo
+          </span>
+        </div>
+      </div>
+
+      <!-- Success State -->
+      <div class="success-state" id="successState">
+        <div class="success-checkmark">✓</div>
+        <div class="success-title">¡Pregunta enviada!</div>
+        <p class="success-text">Tu pregunta está siendo revisada por el moderador</p>
+        <button class="btn btn-ghost btn-lg" id="newQuestionBtn" style="width: 100%;">
+          Hacer otra pregunta
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Connection Status -->
+  <div style="position: fixed; bottom: var(--sp-3); left: 50%; transform: translateX(-50%); z-index: 100;">
+    <div class="connection-status" id="connectionStatus">
+      <span class="connection-dot" id="connectionDot"></span>
+      <span id="connectionText">Conectando...</span>
+    </div>
+  </div>
+
+  <!-- Toast Container -->
+  <div class="toast-container" id="toastContainer"></div>
+
+  <!-- Firebase DB Client -->
+  <script src="db.js"></script>
+
+  <script>
+    // ─── DOM Elements ──────────────────────────────────────
+    const questionForm = document.getElementById('questionForm');
+    const questionInput = document.getElementById('questionInput');
+    const charCounter = document.getElementById('charCounter');
+    const submitBtn = document.getElementById('submitBtn');
+    const submitText = document.getElementById('submitText');
+    const submitSpinner = document.getElementById('submitSpinner');
+    const formState = document.getElementById('formState');
+    const successState = document.getElementById('successState');
+    const newQuestionBtn = document.getElementById('newQuestionBtn');
+    const connectionDot = document.getElementById('connectionDot');
+    const connectionText = document.getElementById('connectionText');
+    const toastContainer = document.getElementById('toastContainer');
+
+    // ─── Connection Monitoring ─────────────────────────────
+    // Since Firebase REST SSE doesn't maintain persistent connections the same way socket.io does,
+    // we establish a small ping/listener or rely on the EventSource status.
+    // Let's connect a listener to monitor if we're connected to the Realtime Database.
+    const listener = DB.listen('.info/connected', (connected) => {
+      if (connected === true) {
+        connectionDot.className = 'connection-dot connected';
+        connectionText.textContent = 'Conectado';
+      } else {
+        connectionDot.className = 'connection-dot disconnected';
+        connectionText.textContent = 'Desconectado';
+      }
+    }, (isOpen) => {
+      if (isOpen) {
+        connectionDot.className = 'connection-dot connected';
+        connectionText.textContent = 'Conectado';
+      } else {
+        connectionDot.className = 'connection-dot disconnected';
+        connectionText.textContent = 'Desconectado';
+      }
+    });
+
+    // ─── Character Counter ─────────────────────────────────
+    questionInput.addEventListener('input', () => {
+      const len = questionInput.value.length;
+      const max = 500;
+      charCounter.textContent = `${len} / ${max}`;
+
+      if (len > max * 0.9) {
+        charCounter.className = 'char-counter danger';
+      } else if (len > max * 0.7) {
+        charCounter.className = 'char-counter warning';
+      } else {
+        charCounter.className = 'char-counter';
+      }
+    });
+
+    // ─── Submit Question ───────────────────────────────────
+    questionForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+
+      const text = questionInput.value.trim();
+      if (!text) return;
+
+      // Show loading
+      submitBtn.disabled = true;
+      submitText.classList.add('hidden');
+      submitSpinner.classList.remove('hidden');
+
+      try {
+        const question = {
+          text: text,
+          timestamp: new Date().toISOString(),
+          status: 'pending' // pending | approved | rejected
+        };
+        
+        await DB.push('questions', question);
+
+        // Show success state
+        formState.style.display = 'none';
+        successState.classList.add('active');
+      } catch (err) {
+        console.error(err);
+        showToast('Error al enviar la pregunta. Revisa tu conexión.', '⚠️');
+      } finally {
+        // Reset button
+        submitBtn.disabled = false;
+        submitText.classList.remove('hidden');
+        submitSpinner.classList.add('hidden');
+      }
+    });
+
+    // ─── New Question ──────────────────────────────────────
+    newQuestionBtn.addEventListener('click', () => {
+      questionInput.value = '';
+      charCounter.textContent = '0 / 500';
+      charCounter.className = 'char-counter';
+      formState.style.display = 'block';
+      successState.classList.remove('active');
+      
+      // Re-animate the card
+      const card = document.getElementById('mainCard');
+      card.style.animation = 'none';
+      card.offsetHeight; // force reflow
+      card.style.animation = 'slideUp 0.4s var(--ease-out)';
+
+      questionInput.focus();
+    });
+
+    // ─── Toast Notifications ───────────────────────────────
+    function showToast(message, icon = '✦') {
+      const toast = document.createElement('div');
+      toast.className = 'toast';
+      toast.innerHTML = `<span>${icon}</span> ${message}`;
+      toastContainer.appendChild(toast);
+
+      setTimeout(() => {
+        toast.classList.add('toast-out');
+        setTimeout(() => toast.remove(), 300);
+      }, 3000);
+    }
+  </script>
+</body>
+</html>

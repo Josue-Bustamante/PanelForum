@@ -3,82 +3,91 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="description" content="Envía tu pregunta de forma anónima para la sesión de Q&A">
-  <title>Enviar Pregunta — Panel Forum</title>
+  <meta name="description" content="Panel de moderación — Revisa y aprueba preguntas">
+  <title>Moderador — Panel Forum</title>
   <link rel="stylesheet" href="styles.css">
-  <style>
-    /* Page-specific overrides */
-    .page-center {
-      padding: var(--sp-4);
-      padding-top: env(safe-area-inset-top, var(--sp-4));
-      padding-bottom: env(safe-area-inset-bottom, var(--sp-4));
-    }
-  </style>
 </head>
 <body>
   <!-- Animated Background -->
   <div class="bg-animated">
     <div class="bg-orb bg-orb--1"></div>
     <div class="bg-orb bg-orb--2"></div>
-    <div class="bg-orb bg-orb--3"></div>
   </div>
 
-  <!-- Main Content -->
-  <div class="page-center">
-    <div class="glass-card glass-card--elevated audience-card" id="mainCard">
-      
-      <!-- Form State -->
-      <div id="formState">
-        <div class="audience-header">
-          <div class="audience-icon">💬</div>
-          <h1 class="text-heading gradient-text audience-title">Haz tu pregunta</h1>
-          <p class="audience-subtitle">Tu pregunta será revisada antes de mostrarse</p>
-        </div>
-
-        <form class="audience-form" id="questionForm">
-          <div class="form-group">
-            <label class="form-label" for="questionInput">Tu pregunta</label>
-            <textarea 
-              class="form-textarea" 
-              id="questionInput" 
-              placeholder="Escribe tu pregunta aquí..."
-              maxlength="500"
-              rows="4"
-              required
-            ></textarea>
-            <div class="char-counter" id="charCounter">0 / 500</div>
+  <div class="app-container admin-layout">
+    
+    <!-- ─── Header ──────────────────────────────────── -->
+    <header class="admin-header">
+      <div class="admin-header-inner">
+        <div class="admin-brand">
+          <div class="admin-brand-icon">🛡️</div>
+          <span class="admin-brand-text">Panel de Moderación</span>
+          <div class="connection-status" id="connectionStatus">
+            <span class="connection-dot" id="connectionDot"></span>
+            <span id="connectionText">Conectando...</span>
           </div>
-
-          <button type="submit" class="btn btn-primary btn-lg" id="submitBtn" style="width: 100%;">
-            <span id="submitText">Enviar pregunta</span>
-            <div class="spinner hidden" id="submitSpinner"></div>
+        </div>
+        <div class="admin-actions">
+          <button class="btn btn-ghost btn-sm" id="showQrBtn" title="Mostrar QR en proyector">
+            📱 Mostrar QR
           </button>
-        </form>
-
-        <div class="audience-footer">
-          <span class="anonymous-badge">
-            🔒 Completamente anónimo
-          </span>
+          <button class="btn btn-ghost btn-sm" id="clearDisplayBtn" title="Limpiar proyector">
+            📺 Limpiar Display
+          </button>
+          <button class="btn btn-danger btn-sm" id="clearAllBtn" title="Borrar todas las preguntas">
+            🗑️ Borrar todo
+          </button>
         </div>
       </div>
+    </header>
 
-      <!-- Success State -->
-      <div class="success-state" id="successState">
-        <div class="success-checkmark">✓</div>
-        <div class="success-title">¡Pregunta enviada!</div>
-        <p class="success-text">Tu pregunta está siendo revisada por el moderador</p>
-        <button class="btn btn-ghost btn-lg" id="newQuestionBtn" style="width: 100%;">
-          Hacer otra pregunta
-        </button>
+    <!-- ─── Stats ───────────────────────────────────── -->
+    <div class="stats-bar">
+      <div class="glass-card stat-card">
+        <div class="stat-number blue" id="statTotal">0</div>
+        <div class="stat-label">Total</div>
+      </div>
+      <div class="glass-card stat-card">
+        <div class="stat-number gold" id="statPending">0</div>
+        <div class="stat-label">Pendientes</div>
+      </div>
+      <div class="glass-card stat-card">
+        <div class="stat-number green" id="statApproved">0</div>
+        <div class="stat-label">Aprobadas</div>
+      </div>
+      <div class="glass-card stat-card">
+        <div class="stat-number red" id="statRejected">0</div>
+        <div class="stat-label">Rechazadas</div>
       </div>
     </div>
-  </div>
 
-  <!-- Connection Status -->
-  <div style="position: fixed; bottom: var(--sp-3); left: 50%; transform: translateX(-50%); z-index: 100;">
-    <div class="connection-status" id="connectionStatus">
-      <span class="connection-dot" id="connectionDot"></span>
-      <span id="connectionText">Conectando...</span>
+    <!-- ─── Filters ─────────────────────────────────── -->
+    <div class="filter-tabs">
+      <button class="filter-tab active" data-filter="all" id="filterAll">
+        Todas <span class="count" id="countAll">0</span>
+      </button>
+      <button class="filter-tab" data-filter="pending" id="filterPending">
+        ⏳ Pendientes <span class="count" id="countPending">0</span>
+      </button>
+      <button class="filter-tab" data-filter="approved" id="filterApproved">
+        ✅ Aprobadas <span class="count" id="countApproved">0</span>
+      </button>
+      <button class="filter-tab" data-filter="rejected" id="filterRejected">
+        ❌ Rechazadas <span class="count" id="countRejected">0</span>
+      </button>
+    </div>
+
+    <!-- ─── Questions ───────────────────────────────── -->
+    <div class="questions-container">
+      <div class="questions-grid" id="questionsGrid">
+        <!-- Questions rendered here -->
+      </div>
+      
+      <div class="empty-state" id="emptyState">
+        <div class="empty-icon">📭</div>
+        <div class="empty-title">Sin preguntas aún</div>
+        <p class="empty-text">Las preguntas de la audiencia aparecerán aquí</p>
+      </div>
     </div>
   </div>
 
@@ -89,25 +98,41 @@
   <script src="db.js"></script>
 
   <script>
-    // ─── DOM Elements ──────────────────────────────────────
-    const questionForm = document.getElementById('questionForm');
-    const questionInput = document.getElementById('questionInput');
-    const charCounter = document.getElementById('charCounter');
-    const submitBtn = document.getElementById('submitBtn');
-    const submitText = document.getElementById('submitText');
-    const submitSpinner = document.getElementById('submitSpinner');
-    const formState = document.getElementById('formState');
-    const successState = document.getElementById('successState');
-    const newQuestionBtn = document.getElementById('newQuestionBtn');
+    // ─── State ─────────────────────────────────────────
+    let questions = {}; // Realtime object from Firebase { '-Nxxxxxx': { text, timestamp, status } }
+    let displayState = { mode: 'qr', activeQuestionId: null };
+    let currentFilter = 'all';
+    let isInitialLoad = true;
+    let knownKeys = new Set();
+
+    // ─── DOM ───────────────────────────────────────────
+    const questionsGrid = document.getElementById('questionsGrid');
+    const emptyState = document.getElementById('emptyState');
     const connectionDot = document.getElementById('connectionDot');
     const connectionText = document.getElementById('connectionText');
     const toastContainer = document.getElementById('toastContainer');
 
-    // ─── Connection Monitoring ─────────────────────────────
-    // Since Firebase REST SSE doesn't maintain persistent connections the same way socket.io does,
-    // we establish a small ping/listener or rely on the EventSource status.
-    // Let's connect a listener to monitor if we're connected to the Realtime Database.
-    const listener = DB.listen('.info/connected', (connected) => {
+    // Stats
+    const statTotal = document.getElementById('statTotal');
+    const statPending = document.getElementById('statPending');
+    const statApproved = document.getElementById('statApproved');
+    const statRejected = document.getElementById('statRejected');
+
+    // Counts in filters
+    const countAll = document.getElementById('countAll');
+    const countPending = document.getElementById('countPending');
+    const countApproved = document.getElementById('countApproved');
+    const countRejected = document.getElementById('countRejected');
+
+    // Buttons
+    const showQrBtn = document.getElementById('showQrBtn');
+    const clearDisplayBtn = document.getElementById('clearDisplayBtn');
+    const clearAllBtn = document.getElementById('clearAllBtn');
+
+    // ─── Realtime Subscriptions ─────────────────────────
+    
+    // 1. Connection listener
+    DB.listen('.info/connected', (connected) => {
       if (connected === true) {
         connectionDot.className = 'connection-dot connected';
         connectionText.textContent = 'Conectado';
@@ -125,74 +150,276 @@
       }
     });
 
-    // ─── Character Counter ─────────────────────────────────
-    questionInput.addEventListener('input', () => {
-      const len = questionInput.value.length;
-      const max = 500;
-      charCounter.textContent = `${len} / ${max}`;
-
-      if (len > max * 0.9) {
-        charCounter.className = 'char-counter danger';
-      } else if (len > max * 0.7) {
-        charCounter.className = 'char-counter warning';
+    // 2. Listen to displayState
+    DB.listen('displayState', (data) => {
+      if (data) {
+        displayState = data;
       } else {
-        charCounter.className = 'char-counter';
+        displayState = { mode: 'qr', activeQuestionId: null };
       }
+      render();
     });
 
-    // ─── Submit Question ───────────────────────────────────
-    questionForm.addEventListener('submit', async (e) => {
-      e.preventDefault();
+    // 3. Listen to questions
+    DB.listen('questions', (data) => {
+      questions = data || {};
+      
+      // Handle notifications for new questions
+      const currentKeys = Object.keys(questions);
+      if (!isInitialLoad) {
+        currentKeys.forEach(key => {
+          if (!knownKeys.has(key)) {
+            const q = questions[key];
+            if (q.status === 'pending') {
+              showToast(`Nueva pregunta recibida: "${q.text.substring(0, 50)}${q.text.length > 50 ? '...' : ''}"`, '🔔');
+              playNotificationSound();
+            }
+          }
+        });
+      } else {
+        isInitialLoad = false;
+      }
+      
+      knownKeys = new Set(currentKeys);
+      render();
+    });
 
-      const text = questionInput.value.trim();
-      if (!text) return;
+    // ─── Render ────────────────────────────────────────
+    function render() {
+      const qList = getQuestionsList();
+      updateStats(qList);
+      updateCounts(qList);
+      renderQuestions(qList);
+    }
 
-      // Show loading
-      submitBtn.disabled = true;
-      submitText.classList.add('hidden');
-      submitSpinner.classList.remove('hidden');
+    function getQuestionsList() {
+      return Object.keys(questions).map(key => ({
+        id: key,
+        ...questions[key]
+      }));
+    }
+
+    function updateStats(qList) {
+      statTotal.textContent = qList.length;
+      statPending.textContent = qList.filter(q => q.status === 'pending').length;
+      statApproved.textContent = qList.filter(q => q.status === 'approved').length;
+      statRejected.textContent = qList.filter(q => q.status === 'rejected').length;
+    }
+
+    function updateCounts(qList) {
+      countAll.textContent = qList.length;
+      countPending.textContent = qList.filter(q => q.status === 'pending').length;
+      countApproved.textContent = qList.filter(q => q.status === 'approved').length;
+      countRejected.textContent = qList.filter(q => q.status === 'rejected').length;
+    }
+
+    function renderQuestions(qList) {
+      const filtered = currentFilter === 'all' 
+        ? qList 
+        : qList.filter(q => q.status === currentFilter);
+
+      // Sort: pending first, then newest
+      filtered.sort((a, b) => {
+        const statusOrder = { pending: 0, approved: 1, rejected: 2 };
+        if (statusOrder[a.status] !== statusOrder[b.status]) {
+          return statusOrder[a.status] - statusOrder[b.status];
+        }
+        return new Date(b.timestamp) - new Date(a.timestamp);
+      });
+
+      if (filtered.length === 0) {
+        questionsGrid.innerHTML = '';
+        emptyState.classList.remove('hidden');
+        return;
+      }
+
+      emptyState.classList.add('hidden');
+      questionsGrid.innerHTML = filtered.map(q => createQuestionCard(q)).join('');
+
+      // Bind events
+      questionsGrid.querySelectorAll('[data-action]').forEach(btn => {
+        btn.addEventListener('click', handleAction);
+      });
+    }
+
+    function createQuestionCard(q) {
+      const time = new Date(q.timestamp).toLocaleTimeString('es', { 
+        hour: '2-digit', 
+        minute: '2-digit' 
+      });
+      
+      const isActive = displayState.mode === 'question' && displayState.activeQuestionId === q.id;
+      const badgeClass = `badge-${q.status}`;
+      const statusLabels = {
+        pending: '⏳ Pendiente',
+        approved: '✅ Aprobada',
+        rejected: '❌ Rechazada'
+      };
+
+      let actions = '';
+      
+      if (q.status === 'pending') {
+        actions = `
+          <button class="btn btn-success btn-sm" data-action="approve" data-id="${q.id}">
+            ✅ Aprobar
+          </button>
+          <button class="btn btn-danger btn-sm" data-action="reject" data-id="${q.id}">
+            ❌ Rechazar
+          </button>
+        `;
+      } else if (q.status === 'approved') {
+        actions = `
+          <button class="btn btn-primary btn-sm ${isActive ? 'active-display-btn' : ''}" 
+                  data-action="show" data-id="${q.id}"
+                  ${isActive ? 'disabled' : ''}>
+            📺 ${isActive ? 'En pantalla' : 'Mostrar'}
+          </button>
+        `;
+      }
+
+      actions += `
+        <button class="btn btn-ghost btn-sm btn-icon" data-action="delete" data-id="${q.id}" title="Eliminar">
+          🗑️
+        </button>
+      `;
+
+      // Visual numeric indicator from key or time
+      const displayId = q.id.substring(1, 5).toUpperCase();
+
+      return `
+        <div class="glass-card question-card ${isActive ? 'active-on-display' : ''}">
+          <div class="question-top">
+            <div class="question-meta">
+              <span class="badge ${badgeClass}">${statusLabels[q.status]}</span>
+              <span class="question-time">🕐 ${time}</span>
+              ${isActive ? '<span class="badge badge-approved" style="animation: pulse 2s infinite;">📺 EN PANTALLA</span>' : ''}
+            </div>
+            <span class="question-id">#${displayId}</span>
+          </div>
+          <div class="question-text">${escapeHtml(q.text)}</div>
+          <div class="question-actions">${actions}</div>
+        </div>
+      `;
+    }
+
+    // ─── Actions ───────────────────────────────────────
+    async function handleAction(e) {
+      const btn = e.currentTarget;
+      const action = btn.dataset.action;
+      const id = btn.dataset.id;
 
       try {
-        const question = {
-          text: text,
-          timestamp: new Date().toISOString(),
-          status: 'pending' // pending | approved | rejected
-        };
-        
-        await DB.push('questions', question);
-
-        // Show success state
-        formState.style.display = 'none';
-        successState.classList.add('active');
+        switch (action) {
+          case 'approve':
+            await DB.update(`questions/${id}`, { status: 'approved' });
+            showToast('Pregunta aprobada', '✅');
+            break;
+          case 'reject':
+            await DB.update(`questions/${id}`, { status: 'rejected' });
+            showToast('Pregunta rechazada', '❌');
+            break;
+          case 'show':
+            await DB.set('displayState', { mode: 'question', activeQuestionId: id });
+            showToast('Mostrando en pantalla', '📺');
+            break;
+          case 'delete':
+            if (confirm('¿Eliminar esta pregunta?')) {
+              await DB.remove(`questions/${id}`);
+              if (displayState.mode === 'question' && displayState.activeQuestionId === id) {
+                await DB.set('displayState', { mode: 'idle', activeQuestionId: null });
+              }
+              showToast('Pregunta eliminada', '🗑️');
+            }
+            break;
+        }
       } catch (err) {
         console.error(err);
-        showToast('Error al enviar la pregunta. Revisa tu conexión.', '⚠️');
-      } finally {
-        // Reset button
-        submitBtn.disabled = false;
-        submitText.classList.remove('hidden');
-        submitSpinner.classList.add('hidden');
+        showToast('Error al realizar la acción', '⚠️');
+      }
+    }
+
+    // ─── Header Actions ────────────────────────────────
+    showQrBtn.addEventListener('click', async () => {
+      try {
+        await DB.set('displayState', { mode: 'qr', activeQuestionId: null });
+        showToast('QR visible en proyector', '📱');
+      } catch (err) {
+        showToast('Error al cambiar de modo', '⚠️');
       }
     });
 
-    // ─── New Question ──────────────────────────────────────
-    newQuestionBtn.addEventListener('click', () => {
-      questionInput.value = '';
-      charCounter.textContent = '0 / 500';
-      charCounter.className = 'char-counter';
-      formState.style.display = 'block';
-      successState.classList.remove('active');
-      
-      // Re-animate the card
-      const card = document.getElementById('mainCard');
-      card.style.animation = 'none';
-      card.offsetHeight; // force reflow
-      card.style.animation = 'slideUp 0.4s var(--ease-out)';
-
-      questionInput.focus();
+    clearDisplayBtn.addEventListener('click', async () => {
+      try {
+        await DB.set('displayState', { mode: 'idle', activeQuestionId: null });
+        showToast('Proyector limpiado', '📺');
+      } catch (err) {
+        showToast('Error al limpiar pantalla', '⚠️');
+      }
     });
 
-    // ─── Toast Notifications ───────────────────────────────
+    clearAllBtn.addEventListener('click', async () => {
+      if (confirm('¿Borrar TODAS las preguntas? Esta acción no se puede deshacer.')) {
+        try {
+          await DB.remove('questions');
+          await DB.set('displayState', { mode: 'qr', activeQuestionId: null });
+          showToast('Todas las preguntas eliminadas', '🗑️');
+        } catch (err) {
+          showToast('Error al borrar preguntas', '⚠️');
+        }
+      }
+    });
+
+    // ─── Filter Tabs ───────────────────────────────────
+    document.querySelectorAll('.filter-tab').forEach(tab => {
+      tab.addEventListener('click', () => {
+        document.querySelectorAll('.filter-tab').forEach(t => t.classList.remove('active'));
+        tab.classList.add('active');
+        currentFilter = tab.dataset.filter;
+        render();
+      });
+    });
+
+    // ─── Notification Sound ────────────────────────────
+    function playNotificationSound() {
+      try {
+        const ctx = new (window.AudioContext || window.webkitAudioContext)();
+        
+        // First note
+        const osc1 = ctx.createOscillator();
+        const gain1 = ctx.createGain();
+        osc1.connect(gain1);
+        gain1.connect(ctx.destination);
+        osc1.frequency.setValueAtTime(587.33, ctx.currentTime); // D5
+        osc1.type = 'sine';
+        gain1.gain.setValueAtTime(0.15, ctx.currentTime);
+        gain1.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.3);
+        osc1.start(ctx.currentTime);
+        osc1.stop(ctx.currentTime + 0.3);
+
+        // Second note
+        const osc2 = ctx.createOscillator();
+        const gain2 = ctx.createGain();
+        osc2.connect(gain2);
+        gain2.connect(ctx.destination);
+        osc2.frequency.setValueAtTime(880, ctx.currentTime + 0.15); // A5
+        osc2.type = 'sine';
+        gain2.gain.setValueAtTime(0, ctx.currentTime);
+        gain2.gain.setValueAtTime(0.15, ctx.currentTime + 0.15);
+        gain2.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.5);
+        osc2.start(ctx.currentTime + 0.15);
+        osc2.stop(ctx.currentTime + 0.5);
+      } catch (e) {
+        // Audio not available
+      }
+    }
+
+    // ─── Utilities ─────────────────────────────────────
+    function escapeHtml(text) {
+      const div = document.createElement('div');
+      div.textContent = text;
+      return div.innerHTML;
+    }
+
     function showToast(message, icon = '✦') {
       const toast = document.createElement('div');
       toast.className = 'toast';

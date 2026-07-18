@@ -188,10 +188,12 @@
       // Build audience url based on current browser window location
       let url = window.location.href;
       if (url.includes('display.html')) {
-        url = url.replace('display.html', 'index.html');
-      } else if (!url.endsWith('index.html')) {
+        url = url.replace('display.html', 'preguntar.html');
+      } else {
         // Fallback for directory indexing or custom configurations
-        url = window.location.origin + window.location.pathname.replace(/\/$/, '') + '/index.html';
+        const path = window.location.pathname;
+        const newPath = path.substring(0, path.lastIndexOf('/')) + '/preguntar.html';
+        url = window.location.origin + newPath;
       }
 
       displayUrl.textContent = url;
