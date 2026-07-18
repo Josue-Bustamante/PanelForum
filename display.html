@@ -1,0 +1,307 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="Vista de proyector — Preguntas en tiempo real">
+  <title>Proyector — Panel Forum</title>
+  <link rel="stylesheet" href="styles.css">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+  <style>
+    /* Display-specific enhancements */
+    body {
+      background: var(--dark-950);
+      cursor: none;
+    }
+
+    body:hover {
+      cursor: default;
+    }
+
+    .bg-orb { opacity: 0.08; }
+
+    .display-particles {
+      position: fixed;
+      inset: 0;
+      z-index: 0;
+      pointer-events: none;
+      overflow: hidden;
+    }
+
+    .particle {
+      position: absolute;
+      width: 3px;
+      height: 3px;
+      background: var(--gold-400);
+      border-radius: 50%;
+      opacity: 0;
+      animation: particleFloat linear infinite;
+    }
+
+    @keyframes particleFloat {
+      0% {
+        opacity: 0;
+        transform: translateY(100vh) scale(0);
+      }
+      10% {
+        opacity: 0.6;
+      }
+      90% {
+        opacity: 0.2;
+      }
+      100% {
+        opacity: 0;
+        transform: translateY(-20px) scale(1);
+      }
+    }
+
+    /* Accent line at top */
+    .display-accent-line {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 4px;
+      background: linear-gradient(90deg, transparent, var(--gold-500), var(--gold-400), var(--gold-500), transparent);
+      z-index: 10;
+    }
+
+    /* Animated border for question */
+    .display-question-container {
+      position: relative;
+      padding: var(--sp-12);
+      border-radius: var(--radius-2xl);
+      background: rgba(45, 36, 16, 0.35);
+      backdrop-filter: blur(20px);
+      border: 1px solid rgba(251, 191, 36, 0.15);
+      box-shadow: var(--shadow-xl), var(--shadow-glow);
+    }
+
+    /* Hide display modes by default */
+    .display-mode {
+      display: none;
+    }
+
+    .display-mode.active {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+  </style>
+</head>
+<body>
+  <!-- Animated Background -->
+  <div class="bg-animated">
+    <div class="bg-orb bg-orb--1"></div>
+    <div class="bg-orb bg-orb--2"></div>
+    <div class="bg-orb bg-orb--3"></div>
+  </div>
+
+  <!-- Floating Particles -->
+  <div class="display-particles" id="particles"></div>
+
+  <!-- Top Accent Line -->
+  <div class="display-accent-line"></div>
+
+  <!-- ═══ Display Container ═══ -->
+  <div class="display-fullscreen">
+
+    <!-- QR Mode -->
+    <div class="display-mode active" id="modeQR">
+      <div class="display-qr">
+        <h1 class="display-qr-title gradient-text">📱 Escanea para preguntar</h1>
+        <div class="qr-wrapper" id="qrContainer">
+          <!-- QR Generated Here -->
+        </div>
+        <p class="display-qr-subtitle">Envía tu pregunta de forma anónima</p>
+        <p class="display-qr-url" id="displayUrl"></p>
+      </div>
+    </div>
+
+    <!-- Question Mode -->
+    <div class="display-mode" id="modeQuestion">
+      <div class="display-question">
+        <div class="display-question-container">
+          <div class="display-question-text" id="questionText">
+            <!-- Question text appears here -->
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Idle Mode -->
+    <div class="display-mode" id="modeIdle">
+      <div class="display-idle">
+        <div class="display-idle-icon">💬</div>
+        <p class="display-idle-text gradient-text">Esperando preguntas...</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Brand Footer -->
+  <div class="display-brand">
+    ✦ Panel Forum Q&A
+  </div>
+
+  <!-- Connection indicator (subtle) -->
+  <div style="position: fixed; top: var(--sp-3); right: var(--sp-3); z-index: 100;">
+    <div class="connection-status">
+      <span class="connection-dot" id="connectionDot"></span>
+    </div>
+  </div>
+
+  <!-- Firebase DB Client -->
+  <script src="db.js"></script>
+
+  <script>
+    // ─── DOM ───────────────────────────────────────────
+    const modeQR = document.getElementById('modeQR');
+    const modeQuestion = document.getElementById('modeQuestion');
+    const modeIdle = document.getElementById('modeIdle');
+    const questionText = document.getElementById('questionText');
+    const qrContainer = document.getElementById('qrContainer');
+    const displayUrl = document.getElementById('displayUrl');
+    const connectionDot = document.getElementById('connectionDot');
+    const particlesContainer = document.getElementById('particles');
+
+    // State cache
+    let displayState = { mode: 'qr', activeQuestionId: null };
+    let questions = {};
+
+    // ─── Generate Particles ────────────────────────────
+    function createParticles() {
+      for (let i = 0; i < 30; i++) {
+        const particle = document.createElement('div');
+        particle.className = 'particle';
+        particle.style.left = Math.random() * 100 + '%';
+        particle.style.width = (Math.random() * 3 + 1) + 'px';
+        particle.style.height = particle.style.width;
+        particle.style.animationDuration = (Math.random() * 15 + 10) + 's';
+        particle.style.animationDelay = (Math.random() * 15) + 's';
+        particlesContainer.appendChild(particle);
+      }
+    }
+    createParticles();
+
+    // ─── Generate QR Code ──────────────────────────────
+    function generateQR() {
+      // Build audience url based on current browser window location
+      let url = window.location.href;
+      if (url.includes('display.html')) {
+        url = url.replace('display.html', 'index.html');
+      } else if (!url.endsWith('index.html')) {
+        // Fallback for directory indexing or custom configurations
+        url = window.location.origin + window.location.pathname.replace(/\/$/, '') + '/index.html';
+      }
+
+      displayUrl.textContent = url;
+
+      // Clear previous QR
+      qrContainer.innerHTML = '';
+
+      new QRCode(qrContainer, {
+        text: url,
+        width: 280,
+        height: 280,
+        colorDark: '#1A1408',
+        colorLight: '#FFFFFF',
+        correctLevel: QRCode.CorrectLevel.H
+      });
+    }
+
+    generateQR();
+
+    // ─── Realtime Subscriptions ─────────────────────────
+    
+    // 1. Connection listener
+    DB.listen('.info/connected', (connected) => {
+      if (connected === true) {
+        connectionDot.className = 'connection-dot connected';
+      } else {
+        connectionDot.className = 'connection-dot disconnected';
+      }
+    }, (isOpen) => {
+      if (isOpen) {
+        connectionDot.className = 'connection-dot connected';
+      } else {
+        connectionDot.className = 'connection-dot disconnected';
+      }
+    });
+
+    // 2. Listen to questions first (so we have a cache)
+    DB.listen('questions', (data) => {
+      questions = data || {};
+      updateDisplay();
+    });
+
+    // 3. Listen to displayState
+    DB.listen('displayState', (data) => {
+      displayState = data || { mode: 'qr', activeQuestionId: null };
+      updateDisplay();
+    });
+
+    // ─── Display Update ────────────────────────────────
+    function updateDisplay() {
+      const mode = displayState.mode || 'qr';
+      
+      // Hide all
+      modeQR.classList.remove('active');
+      modeQuestion.classList.remove('active');
+      modeIdle.classList.remove('active');
+
+      switch (mode) {
+        case 'qr':
+          modeQR.classList.add('active');
+          break;
+
+        case 'question':
+          const activeId = displayState.activeQuestionId;
+          const activeQ = questions[activeId];
+          if (activeQ) {
+            // Check if text is different before triggering transition animations
+            if (questionText.textContent !== activeQ.text) {
+              questionText.textContent = activeQ.text;
+              
+              // Re-trigger animation
+              modeQuestion.style.animation = 'none';
+              modeQuestion.offsetHeight;
+              modeQuestion.style.animation = '';
+              
+              const container = modeQuestion.querySelector('.display-question-container');
+              container.style.animation = 'none';
+              container.offsetHeight;
+              container.style.animation = 'questionReveal 0.8s var(--ease-out)';
+            }
+          } else {
+            // If the active question is not loaded yet or deleted
+            questionText.textContent = "Cargando pregunta...";
+          }
+          modeQuestion.classList.add('active');
+          break;
+
+        case 'idle':
+        default:
+          modeIdle.classList.add('active');
+          break;
+      }
+    }
+
+    // ─── Keyboard Controls ─────────────────────────────
+    document.addEventListener('keydown', (e) => {
+      // F11 or F for fullscreen
+      if (e.key === 'f' || e.key === 'F') {
+        if (!document.fullscreenElement) {
+          document.documentElement.requestFullscreen().catch(() => {});
+        } else {
+          document.exitFullscreen().catch(() => {});
+        }
+      }
+
+      // Escape to exit fullscreen
+      if (e.key === 'Escape' && document.fullscreenElement) {
+        document.exitFullscreen().catch(() => {});
+      }
+    });
+  </script>
+</body>
+</html>
