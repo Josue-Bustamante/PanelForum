@@ -107,14 +107,8 @@
     // Since Firebase REST SSE doesn't maintain persistent connections the same way socket.io does,
     // we establish a small ping/listener or rely on the EventSource status.
     // Let's connect a listener to monitor if we're connected to the Realtime Database.
-    const listener = DB.listen('.info/connected', (connected) => {
-      if (connected === true) {
-        connectionDot.className = 'connection-dot connected';
-        connectionText.textContent = 'Conectado';
-      } else {
-        connectionDot.className = 'connection-dot disconnected';
-        connectionText.textContent = 'Desconectado';
-      }
+    const listener = DB.listen('displayState', (data) => {
+      // Just maintaining a listener to keep connection active
     }, (isOpen) => {
       if (isOpen) {
         connectionDot.className = 'connection-dot connected';

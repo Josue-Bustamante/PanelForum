@@ -73,16 +73,20 @@ const DB = {
         const { path: eventPath, data } = JSON.parse(e.data);
 
         if (eventPath === '/') {
-          // Full data replacement (initial load or set())
           cache = data;
         } else {
-          // Individual key update
           if (cache === null) cache = {};
-          const key = eventPath.replace(/^\//, '');
+          const keys = eventPath.split('/').filter(k => k);
+          let current = cache;
+          for (let i = 0; i < keys.length - 1; i++) {
+            if (!current[keys[i]]) current[keys[i]] = {};
+            current = current[keys[i]];
+          }
+          const lastKey = keys[keys.length - 1];
           if (data === null) {
-            if (typeof cache === 'object') delete cache[key];
+            delete current[lastKey];
           } else {
-            if (typeof cache === 'object') cache[key] = data;
+            current[lastKey] = data;
           }
         }
 
@@ -103,9 +107,14 @@ const DB = {
             Object.assign(cache, data);
           }
         } else {
-          const key = eventPath.replace(/^\//, '');
-          if (typeof cache === 'object' && cache[key] && typeof cache[key] === 'object' && typeof data === 'object') {
-            Object.assign(cache[key], data);
+          const keys = eventPath.split('/').filter(k => k);
+          let current = cache;
+          for (let i = 0; i < keys.length; i++) {
+            if (!current[keys[i]]) current[keys[i]] = {};
+            current = current[keys[i]];
+          }
+          if (typeof current === 'object' && typeof data === 'object') {
+            Object.assign(current, data);
           }
         }
 

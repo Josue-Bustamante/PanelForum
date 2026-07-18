@@ -134,15 +134,14 @@
 
     // ─── Realtime Subscriptions ─────────────────────────
     
-    // 1. Connection listener
-    DB.listen('.info/connected', (connected) => {
-      if (connected === true) {
-        connectionDot.className = 'connection-dot connected';
-        connectionText.textContent = 'Conectado';
+    // 1. Listen to displayState (and monitor connection)
+    DB.listen('displayState', (data) => {
+      if (data) {
+        displayState = data;
       } else {
-        connectionDot.className = 'connection-dot disconnected';
-        connectionText.textContent = 'Desconectado';
+        displayState = { mode: 'qr', activeQuestionId: null };
       }
+      render();
     }, (isOpen) => {
       if (isOpen) {
         connectionDot.className = 'connection-dot connected';
@@ -151,16 +150,6 @@
         connectionDot.className = 'connection-dot disconnected';
         connectionText.textContent = 'Desconectado';
       }
-    });
-
-    // 2. Listen to displayState
-    DB.listen('displayState', (data) => {
-      if (data) {
-        displayState = data;
-      } else {
-        displayState = { mode: 'qr', activeQuestionId: null };
-      }
-      render();
     });
 
     // 3. Listen to questions
