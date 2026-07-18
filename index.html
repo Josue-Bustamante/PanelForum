@@ -1,12 +1,15 @@
 <!DOCTYPE html>
 <html lang="es">
+
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta name="description" content="Panel de moderación — Revisa y aprueba preguntas">
-  <title>Moderador — Panel Forum</title>
+  <title>Moderador</title>
   <link rel="stylesheet" href="styles.css">
+  <link rel="icon" href="imagen/icon.png?v=2" type="image/png">
 </head>
+
 <body>
   <!-- Animated Background -->
   <div class="bg-animated">
@@ -15,23 +18,26 @@
   </div>
 
   <div class="app-container admin-layout">
-    
+
     <!-- ─── Header ──────────────────────────────────── -->
     <header class="admin-header">
       <div class="admin-header-inner">
         <div class="admin-brand">
-          <div class="admin-brand-icon">🛡️</div>
+          <img src="imagen/icon.png" alt="Huellas Logo" class="admin-brand-logo">
           <span class="admin-brand-text">Panel de Moderación</span>
-          <div class="connection-status" id="connectionStatus">
+          <div class="connection-status" id="connectionStatus" style="display: none;">
             <span class="connection-dot" id="connectionDot"></span>
             <span id="connectionText">Conectando...</span>
           </div>
         </div>
         <div class="admin-actions">
-          <span style="color: var(--text-muted); font-size: 0.9rem; margin-right: var(--sp-4); display: flex; align-items: center;">
-            Total recibidas: <strong id="statTotal" style="color: var(--text-light); margin-left: var(--sp-2);">0</strong>
+          <span
+            style="color: var(--text-muted); font-size: 0.9rem; margin-right: var(--sp-4); display: flex; align-items: center;">
+            Total recibidas: <strong id="statTotal"
+              style="color: var(--text-light); margin-left: var(--sp-2);">0</strong>
           </span>
-          <a href="display.html" target="_blank" class="btn btn-primary btn-sm" title="Abrir proyector en nueva pestaña">
+          <a href="display.html" target="_blank" class="btn btn-primary btn-sm"
+            title="Abrir proyector en nueva pestaña">
             🖥️ Abrir Proyector
           </a>
           <button class="btn btn-ghost btn-sm" id="showQrBtn" title="Mostrar QR en proyector">
@@ -58,7 +64,8 @@
         <div class="stat-label">Aprobadas</div>
       </div>
       <div class="glass-card stat-card">
-        <div class="stat-number purple" id="statShown" style="color: #a78bfa; text-shadow: 0 0 15px rgba(167,139,250,0.4);">0</div>
+        <div class="stat-number purple" id="statShown"
+          style="color: #a78bfa; text-shadow: 0 0 15px rgba(167,139,250,0.4);">0</div>
         <div class="stat-label">Mostradas</div>
       </div>
       <div class="glass-card stat-card">
@@ -88,7 +95,7 @@
       <div class="questions-grid" id="questionsGrid">
         <!-- Questions rendered here -->
       </div>
-      
+
       <div class="empty-state" id="emptyState">
         <div class="empty-icon">📭</div>
         <div class="empty-title">Sin preguntas aún</div>
@@ -135,7 +142,7 @@
     const clearAllBtn = document.getElementById('clearAllBtn');
 
     // ─── Realtime Subscriptions ─────────────────────────
-    
+
     // 1. Listen to displayState (and monitor connection)
     DB.listen('displayState', (data) => {
       if (data) {
@@ -157,7 +164,7 @@
     // 3. Listen to questions
     DB.listen('questions', (data) => {
       questions = data || {};
-      
+
       // Handle notifications for new questions
       const currentKeys = Object.keys(questions);
       if (!isInitialLoad) {
@@ -173,7 +180,7 @@
       } else {
         isInitialLoad = false;
       }
-      
+
       knownKeys = new Set(currentKeys);
       render();
     });
@@ -209,8 +216,8 @@
     }
 
     function renderQuestions(qList) {
-      const filtered = currentFilter === 'all' 
-        ? qList 
+      const filtered = currentFilter === 'all'
+        ? qList
         : qList.filter(q => q.status === currentFilter);
 
       // Sort: pending first, then newest
@@ -238,11 +245,11 @@
     }
 
     function createQuestionCard(q) {
-      const time = new Date(q.timestamp).toLocaleTimeString('es', { 
-        hour: '2-digit', 
-        minute: '2-digit' 
+      const time = new Date(q.timestamp).toLocaleTimeString('es', {
+        hour: '2-digit',
+        minute: '2-digit'
       });
-      
+
       const isActive = displayState.mode === 'question' && displayState.activeQuestionId === q.id;
       const badgeClass = `badge-${q.status}`;
       const statusLabels = {
@@ -253,7 +260,7 @@
       };
 
       let actions = '';
-      
+
       if (q.status === 'pending') {
         actions = `
           <button class="btn btn-success btn-sm" data-action="approve" data-id="${q.id}">
@@ -380,7 +387,7 @@
     function playNotificationSound() {
       try {
         const ctx = new (window.AudioContext || window.webkitAudioContext)();
-        
+
         // First note
         const osc1 = ctx.createOscillator();
         const gain1 = ctx.createGain();
@@ -430,4 +437,5 @@
     }
   </script>
 </body>
+
 </html>
